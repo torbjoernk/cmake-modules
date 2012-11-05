@@ -1,26 +1,46 @@
 # - Run doxygen on source files as a custom target
 #
 #  include(DoxygenTargets)
-#  add_doxygen(<doxyfile> [OUTPUT_DIRECTORY <outputdir>]
-#   [INSTALL_DESTINATION <installdir>
-#   [INSTALL_COMPONENT <installcomponent>]
-#   [INSTALL_PDF_NAME <installpdfname>] ]
-#   [DOC_TARGET <targetname>]
-#   [WORKING_DIRECTORY] <dirname>]
-#   [PROJECT_NUMBER <versionnumber>]
-#   [NO_WARNINGS]
-#   [NO_PDF]
-#   [QUIET])
+#  add_doxygen(<doxyfile>
+#    [OUTPUT_DIRECTORY <outputdir>]
+#    [INSTALL_DESTINATION <installdir>
+#    [INSTALL_COMPONENT <installcomponent>]
+#    [INSTALL_PDF_NAME <installpdfname>] ]
+#    [DOC_TARGET <targetname>]
+#    [WORKING_DIRECTORY] <dirname>]
+#    [PROJECT_NUMBER <versionnumber>]
+#    [NO_WARNINGS]
+#    [NO_PDF]
+#    [QUIET])
+# Options:
+#  OUTPUT_DIRECTORY     name of directory, where the documentation should be 
+#                       generated, defaults to 'docs-generated' (relative to
+#                       CMAKE_CURRENT_BINARY_DIR)
+#  INSTALL_DESTINATION  where the documentation should be coppied afterwars
+#  INSTALL_PDF_NAME     name of the final PDF documentation
+#  DOC_TARGET           name of the make target to generate the documentation,
+#                       defaults to 'doc'
+#  WORKING_DIRECTORY    path from which Doxygen should be invoced, defaults to
+#                       CMAKE_CURRENT_SOURCE_DIR
+#  PROJECT_NUMBER       project version to appear in documentation
+#  NO_WARNINGS          don't print warnings while running Doxygen, default TRUE
+#  NO_PDF               don't generate PDF version of the documentation
+#  QUIET                do not let Doxygen print anything to STDOUT,
+#                       defaults to TRUE
 #
 # Requires these CMake modules:
-#  FindDoxygen
+#  FindDoxygen, FindLATEX, CMakeParseArguments
 #
 # Requires CMake 2.6 or newer (uses the 'function' command)
 #
 # Original Author:
-# 2009-2010 Ryan Pavlik <rpavlik@iastate.edu> <abiryan@ryand.net>
-# http://academic.cleardefinition.com
-# Iowa State University HCI Graduate Program/VRAC
+#  2009-2010 Ryan Pavlik <rpavlik@iastate.edu> <abiryan@ryand.net>
+#  http://academic.cleardefinition.com
+#  Iowa State University HCI Graduate Program/VRAC
+# 
+# Updates by:
+#  2012 Torbjörn Klatt <opensource at torbjoern minus klatt dot de>
+#  http://torbjoern-klatt.de
 #
 # Copyright Iowa State University 2009-2010.
 # Distributed under the Boost Software License, Version 1.0.
