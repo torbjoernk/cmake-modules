@@ -8,7 +8,8 @@
 #   [DOC_TARGET <targetname>]
 #   [PROJECT_NUMBER <versionnumber>]
 #   [NO_WARNINGS]
-#   [NO_PDF])
+#   [NO_PDF]
+#   [QUIET])
 #
 # Requires these CMake modules:
 #  FindDoxygen
@@ -142,7 +143,7 @@ endfunction()
 
 function(add_doxygen _doxyfile)
 	# parse arguments
-	set(options NO_WARNINGS NO_PDF)
+	set(options NO_WARNINGS NO_PDF QUIET)
 	set(oneValueArgs OUTPUT_DIRECTORY INSTALL_DESTINATION INSTALL_COMPONENT INSTALL_PDF_NAME DOC_TARGET PROJECT_NUMBER)
 	set(multiValueArgs)
 	cmake_parse_arguments(_doxy "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
