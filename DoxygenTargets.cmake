@@ -6,6 +6,7 @@
 #   [INSTALL_COMPONENT <installcomponent>]
 #   [INSTALL_PDF_NAME <installpdfname>] ]
 #   [DOC_TARGET <targetname>]
+#   [WORKING_DIRECTORY] <dirname>]
 #   [PROJECT_NUMBER <versionnumber>]
 #   [NO_WARNINGS]
 #   [NO_PDF]
@@ -144,7 +145,7 @@ endfunction()
 function(add_doxygen _doxyfile)
 	# parse arguments
 	set(options NO_WARNINGS NO_PDF QUIET)
-	set(oneValueArgs OUTPUT_DIRECTORY INSTALL_DESTINATION INSTALL_COMPONENT INSTALL_PDF_NAME DOC_TARGET PROJECT_NUMBER)
+	set(oneValueArgs OUTPUT_DIRECTORY INSTALL_DESTINATION INSTALL_COMPONENT WORKING_DIRECTORY INSTALL_PDF_NAME DOC_TARGET PROJECT_NUMBER)
 	set(multiValueArgs)
 	cmake_parse_arguments(_doxy "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -163,6 +164,10 @@ function(add_doxygen _doxyfile)
 
 	if(NOT _doxy_INSTALL_PDF_NAME)
 		set(_doxy_INSTALL_PDF_NAME "docs-generated.pdf")
+	endif()
+
+	if(NOT _doxy_WORKING_DIRECTORY)
+		set( _doxy_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 	endif()
 
 	if(NOT _doxy_PROJECT_NUMBER)
@@ -268,7 +273,7 @@ function(add_doxygen _doxyfile)
 			${DOXYGEN_EXECUTABLE}
 			"${CMAKE_CURRENT_BINARY_DIR}/${_doxyfile}.additional"
 			WORKING_DIRECTORY
-			"${CMAKE_CURRENT_SOURCE_DIR}"
+			"${_doxy_WORKING_DIRECTORY}"
 			#MAIN_DEPENDENCY ${_doxy_DOC_TARGET}
 			COMMENT
 			"Running Doxygen with configuration ${_doxyfile}..."
