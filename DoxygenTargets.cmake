@@ -1,24 +1,46 @@
 # - Run doxygen on source files as a custom target
 #
 #  include(DoxygenTargets)
-#  add_doxygen(<doxyfile> [OUTPUT_DIRECTORY <outputdir>]
-#   [INSTALL_DESTINATION <installdir>
-#   [INSTALL_COMPONENT <installcomponent>]
-#   [INSTALL_PDF_NAME <installpdfname>] ]
-#   [DOC_TARGET <targetname>]
-#   [PROJECT_NUMBER <versionnumber>]
-#   [NO_WARNINGS]
-#   [NO_PDF])
+#  add_doxygen(<doxyfile>
+#    [OUTPUT_DIRECTORY <outputdir>]
+#    [INSTALL_DESTINATION <installdir>
+#    [INSTALL_COMPONENT <installcomponent>]
+#    [INSTALL_PDF_NAME <installpdfname>] ]
+#    [DOC_TARGET <targetname>]
+#    [WORKING_DIRECTORY] <dirname>]
+#    [PROJECT_NUMBER <versionnumber>]
+#    [NO_WARNINGS]
+#    [NO_PDF]
+#    [QUIET])
+# Options:
+#  OUTPUT_DIRECTORY     name of directory, where the documentation should be 
+#                       generated, defaults to 'docs-generated' (relative to
+#                       CMAKE_CURRENT_BINARY_DIR)
+#  INSTALL_DESTINATION  where the documentation should be coppied afterwars
+#  INSTALL_PDF_NAME     name of the final PDF documentation
+#  DOC_TARGET           name of the make target to generate the documentation,
+#                       defaults to 'doc'
+#  WORKING_DIRECTORY    path from which Doxygen should be invoced, defaults to
+#                       CMAKE_CURRENT_SOURCE_DIR
+#  PROJECT_NUMBER       project version to appear in documentation
+#  NO_WARNINGS          don't print warnings while running Doxygen, default TRUE
+#  NO_PDF               don't generate PDF version of the documentation
+#  QUIET                do not let Doxygen print anything to STDOUT,
+#                       defaults to TRUE
 #
 # Requires these CMake modules:
-#  FindDoxygen
+#  FindDoxygen, FindLATEX, CMakeParseArguments
 #
 # Requires CMake 2.6 or newer (uses the 'function' command)
 #
 # Original Author:
-# 2009-2010 Ryan Pavlik <rpavlik@iastate.edu> <abiryan@ryand.net>
-# http://academic.cleardefinition.com
-# Iowa State University HCI Graduate Program/VRAC
+#  2009-2010 Ryan Pavlik <rpavlik@iastate.edu> <abiryan@ryand.net>
+#  http://academic.cleardefinition.com
+#  Iowa State University HCI Graduate Program/VRAC
+# 
+# Updates by:
+#  2012 Torbjörn Klatt <opensource at torbjoern minus klatt dot de>
+#  http://torbjoern-klatt.de
 #
 # Copyright Iowa State University 2009-2010.
 # Distributed under the Boost Software License, Version 1.0.
@@ -142,83 +164,58 @@ endfunction()
 
 function(add_doxygen _doxyfile)
 	# parse arguments
-	set(WARNINGS YES)
-	set(_nowhere)
-	set(_curdest _nowhere)
-	set(_val_args
-		OUTPUT_DIRECTORY
-		DOC_TARGET
-		INSTALL_DESTINATION
-		INSTALL_COMPONENT
-		INSTALL_PDF_NAME
-		PROJECT_NUMBER)
-	set(_bool_args
-		NO_WARNINGS
-		NO_PDF)
-	foreach(_arg ${_val_args} ${_bool_args})
-		set(${_arg})
-	endforeach()
-	foreach(_element ${ARGN})
-		list(FIND _val_args "${_element}" _val_arg_find)
-		list(FIND _bool_args "${_element}" _bool_arg_find)
-		if("${_val_arg_find}" GREATER "-1")
-			set(_curdest "${_element}")
-		elseif("${_bool_arg_find}" GREATER "-1")
-			set("${_element}" ON)
-			set(_curdest _nowhere)
-		else()
-			list(APPEND ${_curdest} "${_element}")
-		endif()
-	endforeach()
+	set(options NO_WARNINGS NO_PDF QUIET)
+	set(oneValueArgs OUTPUT_DIRECTORY INSTALL_DESTINATION INSTALL_COMPONENT WORKING_DIRECTORY INSTALL_PDF_NAME DOC_TARGET PROJECT_NUMBER)
+	set(multiValueArgs)
+	cmake_parse_arguments(_doxy "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-	if(_nowhere)
+	if(NOT _doxyfile)
 		message(FATAL_ERROR "Syntax error in use of add_doxygen!")
 	endif()
 
-	if(NO_WARNINGS)
-		set(WARNINGS NO)
+	if(NOT _doxy_DOC_TARGET)
+		set(_doxy_DOC_TARGET doc)
 	endif()
 
-	if(NOT DOC_TARGET)
-		set(DOC_TARGET doc)
+	if(NOT _doxy_OUTPUT_DIRECTORY)
+		set(_doxy_OUTPUT_DIRECTORY "docs-generated")
+	endif()
+	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${_doxy_OUTPUT_DIRECTORY}")
+
+	if(NOT _doxy_INSTALL_PDF_NAME)
+		set(_doxy_INSTALL_PDF_NAME "docs-generated.pdf")
 	endif()
 
-	if(NOT OUTPUT_DIRECTORY)
-		set(OUTPUT_DIRECTORY "docs-generated")
+	if(NOT _doxy_WORKING_DIRECTORY)
+		set( _doxy_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 	endif()
 
-	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_DIRECTORY}")
-
-	if(NOT INSTALL_PDF_NAME)
-		set(INSTALL_PDF_NAME "docs-generated.pdf")
-	endif()
-
-	if(NOT PROJECT_NUMBER)
-		set(PROJECT_NUMBER "${CPACK_PACKAGE_VERSION}")
+	if(NOT _doxy_PROJECT_NUMBER)
+		set(_doxy_PROJECT_NUMBER "${CPACK_PACKAGE_VERSION}")
 	endif()
 
 	if(DOXYGEN_FOUND)
-		if(NOT TARGET ${DOC_TARGET})
+		if(NOT TARGET ${_doxy_DOC_TARGET})
 
 			if(NOT IN_DASHBOARD_SCRIPT)
-				add_custom_target(${DOC_TARGET})
-				set_target_properties(${DOC_TARGET}
+				add_custom_target(${_doxy_DOC_TARGET})
+				set_target_properties(${_doxy_DOC_TARGET}
 					PROPERTIES
 					EXCLUDE_FROM_ALL
 					TRUE)
-				set_target_properties(${DOC_TARGET}
+				set_target_properties(${_doxy_DOC_TARGET}
 					PROPERTIES
 					EXCLUDE_FROM_DEFAULT_BUILD
 					TRUE)
 			else()
-				add_custom_target(${DOC_TARGET} ALL)
+				add_custom_target(${_doxy_DOC_TARGET} ALL)
 			endif()
 
 		endif()
 
-		if(NOT IS_ABSOLUTE "${OUTPUT_DIRECTORY}")
+		if(NOT IS_ABSOLUTE "${_doxy_OUTPUT_DIRECTORY}")
 			get_filename_component(OUTPUT_DIRECTORY
-				"${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_DIRECTORY}"
+				"${CMAKE_CURRENT_BINARY_DIR}/${_doxy_OUTPUT_DIRECTORY}"
 				ABSOLUTE)
 		endif()
 
@@ -226,10 +223,10 @@ function(add_doxygen _doxyfile)
 			APPEND
 			PROPERTY
 			ADDITIONAL_MAKE_CLEAN_FILES
-			"${OUTPUT_DIRECTORY}/html"
-			"${OUTPUT_DIRECTORY}/latex")
+			"${_doxy_OUTPUT_DIRECTORY}/html"
+			"${_doxy_OUTPUT_DIRECTORY}/latex")
 
-		if(NOT TARGET ${DOC_TARGET}_open)
+		if(NOT TARGET ${_doxy_DOC_TARGET}_open)
 			# Create a target to open the generated HTML file.
 			if(WIN32)
 				set(DOXYGEN_LAUNCHER_COMMAND start "Documentation")
@@ -237,53 +234,53 @@ function(add_doxygen _doxyfile)
 				set(DOXYGEN_LAUNCHER_COMMAND xdg-open)
 			endif()
 			if(DOXYGEN_LAUNCHER_COMMAND)
-				add_custom_target(${DOC_TARGET}_open
-					COMMAND ${DOXYGEN_LAUNCHER_COMMAND} "${OUTPUT_DIRECTORY}/html/index.html")
-				set_target_properties(${DOC_TARGET}_open
+				add_custom_target(${_doxy_DOC_TARGET}_open
+					COMMAND ${DOXYGEN_LAUNCHER_COMMAND} "${_doxy_OUTPUT_DIRECTORY}/html/index.html")
+				set_target_properties(${_doxy_DOC_TARGET}_open
 					PROPERTIES
 					EXCLUDE_FROM_ALL
 					TRUE)
-				set_target_properties(${DOC_TARGET}_open
+				set_target_properties(${_doxy_DOC_TARGET}_open
 					PROPERTIES
 					EXCLUDE_FROM_DEFAULT_BUILD
 					TRUE)
-				add_dependencies(${DOC_TARGET}_open ${DOC_TARGET})
+				add_dependencies(${_doxy_DOC_TARGET}_open ${_doxy_DOC_TARGET})
 			endif()
 		endif()
 
 		get_filename_component(_doxyfileabs "${_doxyfile}" ABSOLUTE)
-		get_filename_component(INCLUDE_FILE "${_doxyfileabs}" NAME)
-		get_filename_component(INCLUDE_PATH "${_doxyfileabs}" PATH)
+		get_filename_component(_doxy_INCLUDE_FILE "${_doxyfileabs}" NAME)
+		get_filename_component(_doxy_INCLUDE_PATH "${_doxyfileabs}" PATH)
 
 		# Doesn't currently work on Windows, so don't bother
-		if(DOXYGEN_LATEX AND NOT NO_PDF AND NOT WIN32)
-			set(MAKE_PDF YES)
-			set(GENERATE_LATEX YES)
+		if(DOXYGEN_LATEX AND NOT _doxy_NO_PDF AND NOT WIN32)
+			set(_doxy_MAKE_PDF YES)
+			set(_doxy_GENERATE_LATEX YES)
 		else()
-			set(MAKE_PDF NO)
-			set(GENERATE_LATEX NO)
+			set(_doxy_MAKE_PDF NO)
+			set(_doxy_GENERATE_LATEX NO)
 		endif()
 
-		if(DOXYGEN_PDFLATEX AND MAKE_PDF)
-			set(USE_PDFLATEX YES)
+		if(DOXYGEN_PDFLATEX AND _doxy_MAKE_PDF)
+			set(_doxy_USE_PDFLATEX YES)
 		else()
-			set(USE_PDFLATEX NO)
+			set(_doxy_USE_PDFLATEX NO)
 		endif()
 
 		if(DOXYGEN_DOT)
-			set(HAVE_DOT YES)
-			set(DOT_PATH ${DOXYGEN_DOT_PATH})
+			set(_doxy_HAVE_DOT YES)
+			set(_doxy_DOT_PATH ${DOXYGEN_DOT_PATH})
 		else()
-			set(HAVE_DOT NO)
-			set(DOT_PATH)
+			set(_doxy_HAVE_DOT NO)
+			set(_doxy_DOT_PATH)
 		endif()
 
 		# See http://www.cmake.org/pipermail/cmake/2006-August/010786.html
 		# for info on this variable
 		if("${CMAKE_BUILD_TOOL}" MATCHES "(msdev|devenv)")
-			set(WARN_FORMAT "\"$file($line) : $text \"")
+			set(_doxy_WARN_FORMAT "\"$file($line) : $text \"")
 		else()
-			set(WARN_FORMAT "\"$file:$line: $text \"")
+			set(_doxy_WARN_FORMAT "\"$file:$line: $text \"")
 		endif()
 
 		configure_file("${_doxygenmoddir}/DoxygenTargets.doxyfile.in"
@@ -291,41 +288,41 @@ function(add_doxygen _doxyfile)
 			@ONLY)
 
 		add_custom_command(TARGET
-			${DOC_TARGET}
+			${_doxy_DOC_TARGET}
 			COMMAND
 			${DOXYGEN_EXECUTABLE}
 			"${CMAKE_CURRENT_BINARY_DIR}/${_doxyfile}.additional"
 			WORKING_DIRECTORY
-			"${CMAKE_CURRENT_SOURCE_DIR}"
-			#MAIN_DEPENDENCY ${DOC_TARGET}
+			"${_doxy_WORKING_DIRECTORY}"
+			#MAIN_DEPENDENCY ${_doxy_DOC_TARGET}
 			COMMENT
 			"Running Doxygen with configuration ${_doxyfile}..."
 			VERBATIM)
 
-		if(MAKE_PDF)
+		if(_doxy_MAKE_PDF)
 			add_custom_command(TARGET
-				${DOC_TARGET}
+				${_doxy_DOC_TARGET}
 				POST_BUILD
 				COMMAND
 				${CMAKE_MAKE_PROGRAM}
 				WORKING_DIRECTORY
-				"${OUTPUT_DIRECTORY}/latex"
+				"${_doxy_OUTPUT_DIRECTORY}/latex"
 				COMMENT
 				"Generating PDF using PDFLaTeX..."
 				VERBATIM)
 		endif()
 
-		if(INSTALL_DESTINATION)
-			if(INSTALL_COMPONENT)
-				_dt_install_dir("${DOC_TARGET}" "${OUTPUT_DIRECTORY}/html" "${INSTALL_DESTINATION}" "${INSTALL_COMPONENT}")
-				if(MAKE_PDF)
-					_dt_install_file("${DOC_TARGET}" "${OUTPUT_DIRECTORY}/latex/refman.pdf" "${INSTALL_DESTINATION}" "${INSTALL_PDF_NAME}" "${INSTALL_COMPONENT}")
+		if(_doxy_INSTALL_DESTINATION)
+			if(_doxy_INSTALL_COMPONENT)
+				_dt_install_dir("${_doxy_DOC_TARGET}" "${_doxy_OUTPUT_DIRECTORY}/html" "${_doxy_INSTALL_DESTINATION}" "${_doxy_INSTALL_COMPONENT}")
+				if(_doxy_MAKE_PDF)
+					_dt_install_file("${_doxy_DOC_TARGET}" "${_doxy_OUTPUT_DIRECTORY}/latex/refman.pdf" "${_doxy_INSTALL_DESTINATION}" "${_doxy_INSTALL_PDF_NAME}" "${_doxy_INSTALL_COMPONENT}")
 				endif()
 
 			else()
-				_dt_install_dir("${DOC_TARGET}" "${OUTPUT_DIRECTORY}/html" "${INSTALL_DESTINATION}")
-				if(MAKE_PDF)
-					_dt_install_file("${DOC_TARGET}" "${OUTPUT_DIRECTORY}/latex/refman.pdf" "${INSTALL_DESTINATION}" "${INSTALL_PDF_NAME}")
+				_dt_install_dir("${_doxy_DOC_TARGET}" "${_doxy_OUTPUT_DIRECTORY}/html" "${_doxy_INSTALL_DESTINATION}")
+				if(_doxy_MAKE_PDF)
+					_dt_install_file("${_doxy_DOC_TARGET}" "${_doxy_OUTPUT_DIRECTORY}/latex/refman.pdf" "${_doxy_INSTALL_DESTINATION}" "${_doxy_INSTALL_PDF_NAME}")
 				endif()
 			endif()
 		endif()
